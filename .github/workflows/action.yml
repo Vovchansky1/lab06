@@ -1,22 +1,52 @@
-name: Build all & test
-run-name: CMakeLists.txt
+name: Build & upload artifacts
+run-name: CPack
 on: [push]
 jobs:
-  build_lin:
+  make_linux_a:
+    if: startsWith( ${{ github.event.ref }} , '/refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Get data
+      - name: Build Tests
         run: |
           cmake -H. -B_build -DBUILD_TESTS=ON -DBUILD_COVERAGE=ON
           cmake --build _build
           cmake --build _build --target test -- ARGS=--verbose
-      - name: Coveralls
-        uses: threeal/gcovr-action@v1.0.0
+      - name: Make CPack artifacts
+        run: |
+          cd _build
+          cpack -G "DEB"
+          cpack -G "TGZ"
+          cpack -G "RPM"
+          cd ..
+      - name: at1
+        uses: actions/upload-artifact@v4
         with:
-          excludes: third-party
-          coveralls-send: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          name: at1
+          path: _build/bp-*
+  make_win_a:
+    if: startsWith( ${{ github.event.ref }} , '/refs/tags/v')
+    runs-on: windows-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: work
+        run: |
+          cmake -S D:/a/lab06/lab06 -B D:/a/lab06/lab06/_build
+          cmake --build _build
+      - name: Make CPack artifacts
+        run: |
+          cd _build
+          cpack -G "ZIP"
+          cpack -G "NSIS"
+          cd ..
+      - name: at2
+        uses: actions/upload-artifact@v4
+        with:
+          name: at2
+          path: _build/bp-*
